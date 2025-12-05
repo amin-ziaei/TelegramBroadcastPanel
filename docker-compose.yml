@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  # 1. Web service (Flask & Gunicorn)
+  web:
+    build: .
+    container_name: flask_tg_broadcaster_web
+    # First creates DB then runs Gunicorn
+    command: sh -c "python -c 'from app import init_db; init_db()' && gunicorn --bind 0.0.0.0:5000 app:app"
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+      
+  # 2. Scheduler service (Scheduler)
+  scheduler:
+    build: .
+    container_name: flask_tg_broadcaster_scheduler
+    # Run scheduler.py file
+    command: python scheduler.py
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    # Ensure scheduler starts after web so DB is created
+    depends_on:
+      - web
+    # Due to importance, scheduler restarts on error
+    restart: always
